@@ -28,25 +28,37 @@ def main():
     parser.add_argument('-password', help='Masukkan password')
     args = parser.parse_args()
     session = SessionWithHeaderRedirection(args.username, args.password)
+    with open('lastline.dat','r') as numbers:
+        for number in numbers:
+            print(number)
+            num_lines = int(number)
 
     with open('datalist.dat','r') as urls:
+        for _ in range(num_lines):
+            next(urls)
         for url in urls:
-            # filename = url[url.rfind('/')+1:]
-            # print(filename)
+            num_lines += 1
             try:
                 response = session.get(url, stream=True)
-                print(response.status_code)
+                print('Line : '+str(num_lines)+', '+str(response.status_code))
+                last_line = open('lastline.dat','w+')
+                last_line.write(str(num_lines))
+                last_line.close()
+
                 if response.status_code == 200:
                     if response.headers.get('Content-Disposition'):
                         d = response.headers['Content-Disposition']
                         fname = re.findall("filename=(.+)", d)
-                        print(fname[0])
-                    with open(os.getcwd()+'/downloaded/'+fname[0].strip('\"'), 'wb') as infile:
-                        for chunk in response.iter_content(chunk_size=1024*1024):
-                            infile.write(chunk)
+                        print('Writing File : '+fname[0])
+
+                    if not os.path.exists(os.getcwd()+'/downloaded/'+fname[0].strip('\"')):
+                        with open(os.getcwd()+'/downloaded/'+fname[0].strip('\"'), 'wb') as infile:
+                            for chunk in response.iter_content(chunk_size=1024*1024):
+                                infile.write(chunk)
 
             except requests.exceptions.HTTPError as e:
                 print(e)
+                pass
 
 if __name__ == '__main__':
     main()
